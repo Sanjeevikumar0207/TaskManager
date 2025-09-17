@@ -26,7 +26,7 @@ def load_data():
                 "3_months": [],
                 "6_months": []
             },
-            "main_goal": {"goal": "", "progress": 0}  # NEW
+            "main_goal": {"goal": "", "progress": 0}
         }
 
 def save_data(data):
@@ -127,6 +127,13 @@ completed_today = all(t["done"] for t in data["tasks"].get(today, [])) if today 
 data["streaks"][today] = completed_today
 save_data(data)
 
+# Option to reset today's streak
+if st.button("❌ Reset Today’s Streak to 0"):
+    data["streaks"][today] = False
+    save_data(data)
+    st.warning("Today's streak has been reset to 0!")
+    st.rerun()
+
 # ---------------------------
 # Streak Chart (Monthly)
 # ---------------------------
@@ -193,17 +200,3 @@ for seg, goals in data["goals"].items():
         save_data(data)
     else:
         st.info("No goals added yet.")
-# ---------------------------
-# Update streak
-# ---------------------------
-completed_today = all(t["done"] for t in data["tasks"].get(today, [])) if today in data["tasks"] else False
-data["streaks"][today] = completed_today
-save_data(data)
-
-# Option to reset today's streak
-if st.button("❌ Reset Today’s Streak to 0"):
-    data["streaks"][today] = False
-    save_data(data)
-    st.warning("Today's streak has been reset to 0!")
-    st.rerun()
-
