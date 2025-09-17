@@ -200,3 +200,15 @@ for seg, goals in data["goals"].items():
         save_data(data)
     else:
         st.info("No goals added yet.")
+# ---------------------------
+# Reset Current Streak
+# ---------------------------
+if st.button("🛑 Reset Current Streak to 0"):
+    # Break streak by marking the most recent day as False
+    if dates:
+        latest_day = dates[-1]  # last recorded date
+        data["streaks"][latest_day] = False
+        save_data(data)
+        st.warning("Current streak has been reset to 0!")
+        st.rerun()
+
