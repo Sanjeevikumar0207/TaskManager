@@ -41,7 +41,6 @@ def parse_streaks(streaks_dict):
             d = datetime.datetime.strptime(k, "%Y-%m-%d").date()
             parsed.append((d, bool(v)))
         except Exception:
-            # skip keys that aren't valid dates
             continue
     parsed.sort(key=lambda x: x[0])
     return parsed
@@ -86,7 +85,6 @@ days_passed = (datetime.date.today() - datetime.datetime.strptime(data["start_da
 st.sidebar.markdown(f"**Challenge started:** {data['start_date']}")
 st.sidebar.markdown(f"**Days Count:** {days_passed} days")
 
-# compute parsed streaks and current streak for sidebar
 parsed = parse_streaks(data.get("streaks", {}))
 current_streak = compute_current_streak(parsed)
 st.sidebar.markdown(f"🔥 **Current Streak:** {current_streak} days")
@@ -144,7 +142,6 @@ if tasks_today:
             else:
                 st.markdown(f"**🟢 {t['task']}**  —  _{t['priority']}_")
 
-        # Checkbox to toggle done/undone: reflect full state
         key_done = f"done_{today}_{i}"
         checked = st.checkbox("Done", value=t.get("done", False), key=key_done)
         data["tasks"][today][i]["done"] = bool(checked)
@@ -153,13 +150,13 @@ if tasks_today:
             if st.button("Delete", key=f"del_{today}_{i}"):
                 data["tasks"][today].pop(i)
                 save_data(data)
-                st.experimental_rerun()
+                st.rerun()
     save_data(data)
 else:
     st.info("No tasks added for today yet.")
 
 # ---------------------------
-# Update today's streak value based on tasks
+# Update today's streak value
 # ---------------------------
 completed_today = all(t.get("done", False) for t in data["tasks"].get(today, [])) if today in data["tasks"] else False
 data["streaks"][today] = bool(completed_today)
@@ -172,7 +169,7 @@ if st.button("❌ Reset Today’s Streak to 0"):
     data["streaks"][today] = False
     save_data(data)
     st.warning("Today's streak has been reset to 0!")
-    st.experimental_rerun()
+    st.rerun()
 
 # ---------------------------
 # Streak Chart (Monthly)
@@ -180,37 +177,31 @@ if st.button("❌ Reset Today’s Streak to 0"):
 st.header("📊 Monthly Streak Chart")
 if data.get("streaks"):
     streak_df = pd.DataFrame(list(data["streaks"].items()), columns=["date", "done"])
-    # keep only valid dates
-    try:
-        streak_df["date"] = pd.to_datetime(streak_df["date"], format="%Y-%m-%d", errors="coerce")
-        streak_df = streak_df.dropna(subset=["date"])
-        streak_df["month"] = streak_df["date"].dt.to_period("M")
-        monthly_streak = streak_df.groupby("month")["done"].sum().reset_index()
-        fig, ax = plt.subplots()
-        ax.bar(monthly_streak["month"].astype(str), monthly_streak["done"])
-        ax.set_title("Monthly Completed Days")
-        ax.set_xlabel("Month")
-        ax.set_ylabel("Days Completed")
-        plt.xticks(rotation=45)
-        st.pyplot(fig)
-    except Exception:
-        st.info("Not enough valid streak data to show chart.")
+    streak_df["date"] = pd.to_datetime(streak_df["date"], format="%Y-%m-%d", errors="coerce")
+    streak_df = streak_df.dropna(subset=["date"])
+    streak_df["month"] = streak_df["date"].dt.to_period("M")
+    monthly_streak = streak_df.groupby("month")["done"].sum().reset_index()
+    fig, ax = plt.subplots()
+    ax.bar(monthly_streak["month"].astype(str), monthly_streak["done"])
+    ax.set_title("Monthly Completed Days")
+    ax.set_xlabel("Month")
+    ax.set_ylabel("Days Completed")
+    plt.xticks(rotation=45)
+    st.pyplot(fig)
 
 # ---------------------------
-# Compute up-to-date parsed streaks & current streak
+# Compute streaks again
 # ---------------------------
 parsed = parse_streaks(data.get("streaks", {}))
 current_streak = compute_current_streak(parsed)
-# show again (main area) so user sees new value
-st.markdown(f"**Current streak (consecutive days completed ending most recently):** {current_streak} days")
+st.markdown(f"**Current streak:** {current_streak} days")
 
 # ---------------------------
-# Reset Current Streak (break the consecutive streak)
+# Reset Current Streak
 # ---------------------------
 if st.button("🛑 Reset Current Streak to 0"):
-    # Find the most recent date that is True (part of the active streak)
     most_recent_true = None
-    for d, done in reversed(parsed):  # parsed is ascending; reversed -> newest first
+    for d, done in reversed(parsed):
         if done:
             most_recent_true = d
             break
@@ -220,7 +211,7 @@ if st.button("🛑 Reset Current Streak to 0"):
         data["streaks"][key] = False
         save_data(data)
         st.warning(f"Current streak was broken by setting {key} to False.")
-        st.experimental_rerun()
+        st.rerun()
     else:
         st.info("There is no active streak to reset (current streak already 0).")
 
@@ -239,7 +230,6 @@ if st.button("Add Goal"):
     save_data(data)
     st.success(f"Goal added to {goal_type} segment!")
 
-# Show Goals with progress
 for seg, goals in data["goals"].items():
     st.subheader(f"{seg.capitalize()} Goals")
     if goals:
@@ -255,7 +245,7 @@ for seg, goals in data["goals"].items():
                 if st.button("Delete", key=f"del_goal_{seg}_{i}"):
                     data["goals"][seg].pop(i)
                     save_data(data)
-                    st.experimental_rerun()
+                    st.rerun()
         save_data(data)
     else:
         st.info("No goals added yet.")
