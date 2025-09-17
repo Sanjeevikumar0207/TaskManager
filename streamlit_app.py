@@ -193,3 +193,17 @@ for seg, goals in data["goals"].items():
         save_data(data)
     else:
         st.info("No goals added yet.")
+# ---------------------------
+# Update streak
+# ---------------------------
+completed_today = all(t["done"] for t in data["tasks"].get(today, [])) if today in data["tasks"] else False
+data["streaks"][today] = completed_today
+save_data(data)
+
+# Option to reset today's streak
+if st.button("❌ Reset Today’s Streak to 0"):
+    data["streaks"][today] = False
+    save_data(data)
+    st.warning("Today's streak has been reset to 0!")
+    st.rerun()
+
