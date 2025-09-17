@@ -25,7 +25,8 @@ def load_data():
                 "monthly": [],
                 "3_months": [],
                 "6_months": []
-            }
+            },
+            "main_goal": {"goal": "", "progress": 0}  # NEW
         }
 
 def save_data(data):
@@ -40,11 +41,39 @@ st.title("📝 To-Do List & Streak Tracker with Goals")
 
 data = load_data()
 
-# Show Challenge Start Date
+# ---------------------------
+# Challenge Start Date Selector
+# ---------------------------
+st.sidebar.subheader("⚡ Challenge Start Date")
 start_date = datetime.datetime.strptime(data["start_date"], "%Y-%m-%d").date()
-days_passed = (datetime.date.today() - start_date).days + 1
-st.sidebar.markdown(f"**Challenge started:** {start_date}")
+new_start = st.sidebar.date_input("Set/Change Start Date", value=start_date)
+
+if new_start != start_date:
+    data["start_date"] = str(new_start)
+    save_data(data)
+    st.sidebar.success(f"Challenge start date updated to {new_start}")
+
+days_passed = (datetime.date.today() - datetime.datetime.strptime(data["start_date"], "%Y-%m-%d").date()).days + 1
+st.sidebar.markdown(f"**Challenge started:** {data['start_date']}")
 st.sidebar.markdown(f"**Days Count:** {days_passed} days")
+
+# ---------------------------
+# Main Goal Tracker
+# ---------------------------
+st.header("🌟 Main Goal Tracker")
+main_goal = data.get("main_goal", {"goal": "", "progress": 0})
+
+goal_text = st.text_input("Enter your Main Goal", value=main_goal["goal"])
+progress = st.slider("Progress (%)", 0, 100, main_goal["progress"])
+
+if st.button("Save Main Goal"):
+    data["main_goal"] = {"goal": goal_text, "progress": progress}
+    save_data(data)
+    st.success("Main Goal updated!")
+
+if main_goal["goal"]:
+    st.markdown(f"**Main Goal:** {data['main_goal']['goal']}")
+    st.progress(data["main_goal"]["progress"] / 100)
 
 # ---------------------------
 # Add Task
@@ -147,6 +176,10 @@ if st.button("Add Goal"):
 for seg, goals in data["goals"].items():
     st.subheader(f"{seg.capitalize()} Goals")
     if goals:
+        done_count = sum(1 for g in goals if g["done"])
+        total = len(goals)
+        st.write(f"Progress: {done_count}/{total} ({(done_count/total)*100:.0f}%)")
+
         for i, g in enumerate(goals):
             col1, col2 = st.columns([6, 2])
             with col1:
